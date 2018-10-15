@@ -4,7 +4,7 @@ class EncryptionUtils:
 
     def __init__(self, aes_key, account_details, bank_public_key):
         self.aes_key = aes_key
-        self.bank_public_key
+        self.bank_public_key = bank_public_key
         self.account_details = account_details
         self.bank_public_key = bank_public_key
 

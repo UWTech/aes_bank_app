@@ -8,7 +8,7 @@ import json
 
 app = Flask(__name__)
 
-account_details = AccountDetails(WID='Eamon_Wallet', Balance=0)
+account_details = AccountDetails(WID='Eamon_Wallet', balance=0)
 encryption_utils = encryption_utils.EncryptionUtils('key TODO', account_details, 'bank_pulic_key TODO')
 deposit_util = Deposit(encryption_utils)
 

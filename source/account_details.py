@@ -10,7 +10,7 @@ class AccountDetails:
         self.balance -= value
 
     def deposit(self, value):
-        self.balance += value
+        self.balance += int(value)
 
     def get_balance(self):
         return self.balance

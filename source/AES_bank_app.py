@@ -1,4 +1,3 @@
-"""Cloud Foundry test"""
 from flask import Flask
 from source.deposit import Deposit
 from source import encryption_utils
@@ -9,13 +8,33 @@ import json
 app = Flask(__name__)
 
 account_details = AccountDetails(WID='Eamon_Wallet', balance=0)
-encryption_utils = encryption_utils.EncryptionUtils('key TODO', account_details, 'bank_pulic_key TODO')
+encryption_utils = encryption_utils.EncryptionUtils('752EF0D8FB4958670DBA40AB1F3C1D0F8FB4958670DBA40AB1F3752EF0DC1D0F',
+                                                    account_details)
 deposit_util = Deposit(encryption_utils)
 
 @app.route('/info')
 @app.route('/')
 def info():
-    return 'This is an AES encrypted banking app '
+    Response.content_type = "text/plain"
+    return """This is an AES encrypted banking app.
+              Usage:
+              /set_bank_public_key POST public_key: <RSA public key>
+              /user_deposit POST code: <user provided encrypted deposit code>
+              /bank_deposit POST code: <bank provided RSA encrypted code>
+              /wallet_sync POST code: <user provided encrypted sync code>"""
+
+
+@app.route('/set_bank_public_key')
+def set_bank_pubic_key():
+    data = request.data
+    dataDict = json.loads(data)
+    try:
+        key = dataDict["public_key"]
+        encryption_utils.set_bank_public_key(key)
+        return Response('Public Key Set', 200)
+    except Exception as e:
+        print('failed to set key' + e)
+        return Response('Failed to set Public Key', 400)
 
 
 @app.route('/user_deposit', methods=['POST'])
@@ -48,6 +67,7 @@ def bank_deposit():
     except Exception as e:
         print('Failed to deposit' + e)
         return Response('Failed to deposit', 400)
+
 
 @app.route('/wallet_sync', methods=['POST'])
 def wallet_sync():

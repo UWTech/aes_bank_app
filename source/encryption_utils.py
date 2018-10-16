@@ -1,12 +1,17 @@
-
+import rsa
+from Crypto.Cipher import AES
 
 class EncryptionUtils:
 
-    def __init__(self, aes_key, account_details, bank_public_key):
+    def __init__(self, aes_key, account_details, bank_public_key=None):
         self.aes_key = aes_key
         self.bank_public_key = bank_public_key
         self.account_details = account_details
         self.bank_public_key = bank_public_key
+        self.aes = AES.new(aes_key, AES.MODE_CBC)
+
+    def set_bank_public_key(self, bank_pu):
+        self.bank_public_key = bank_pu
 
     def encrypt_deposit_code(self, value):
         return True
@@ -18,7 +23,6 @@ class EncryptionUtils:
         return amount, wallet_ids
 
     def decrypt_bank_deposit_code(self, encrypted_code):
-        # TODO:: decrypt using bank public key
         amount = self._get_bank_amount(encrypted_code)
         return amount
 
@@ -41,15 +45,12 @@ class EncryptionUtils:
         return wallet_map
 
     def _get_bank_amount(self, record):
-        # TODO:: get amount
-        amount = 0
+        amount = rsa.decrypt(record, self.bank_public_key)
         return amount
 
     def _get_user_amount(self, record):
-        # TODO:: get amount
         amount = 0
         return amount
 
     def decrypt(self, code):
-        # TODO:: decrypt
-        return True
+        return self.aes.AESCipher.decrypt(code)

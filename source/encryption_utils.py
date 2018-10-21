@@ -1,31 +1,36 @@
-import rsa
 import binascii
 import hashlib
+from base64 import b64decode, b64encode
 from Crypto.Cipher import AES
-
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.PublicKey import RSA
 
 class EncryptionUtils:
 
     def __init__(self, aes_key, account_details, bank_public_key=None):
+        print('Preparing AES key')
         # convert to byte array in preparation for conversion to hexadecimal
-        key_bytes = bytearray('752EF0D8FB4958670DBA40AB1F3C1D0F8FB4958670DBA40AB1F3752EF0DC1D0F', 'utf8')
+        key_bytes = bytearray.fromhex('752EF0D8FB4958670DBA40AB1F3C1D0F8FB4958670DBA40AB1F3752EF0DC1D0F')
         print('byte array: ' + str(key_bytes))
-        # convert byte array to hexadecimal in preparation of generating a SHA256 digest
-        hex_key = binascii.hexlify(key_bytes)
-        print('hex key string: ' + str(hex_key))
-        # create instance of SHA256
-        h = hashlib.sha256()
-        # hash the hexadecimal representation of the key
-        h.update(hex_key)
-        # generate the digest to serve as the AES key
-        self.aes_key = h.digest()
+        print('length: ' + str(key_bytes.__len__()))
+        self.aes_key = bytes(key_bytes)
         self.bank_public_key = bank_public_key
+        self.bank_rsa = None
         self.account_details = account_details
-        self.bank_public_key = bank_public_key
         self.aes = AES.new(self.aes_key, AES.MODE_ECB)
 
     def set_bank_public_key(self, bank_pu):
-        self.bank_public_key = bank_pu
+        public_modulus = 'CF9E0B601B6BD9335619470D3C22EED15D73B7D6D3AEB725FF4E458ED13D20D48027F2300A4346427E8FBB30C6F6C9E7AAC7B88AB3D376CCF5AF05E0B188CFA1F361F8B5B78C4E9EFC95A667B0AD26D5593FCAF629BB098AAFC7DF6F523D51450C9B7BF1A62EE4D3466D4D69D6B6C5E8488A6BC2BC70B09ED96753BA248516B3'
+        public_exponent = '0x10001'
+        # convert to byte array in preparation for conversion to hexadecimal
+
+        public_mod_int = int(public_modulus, 16)
+
+        exponent_int = int(public_exponent, 16)
+
+        key = RSA.construct((public_mod_int, exponent_int))
+        self.bank_rsa = key
+        self.bank_public_key = PKCS1_OAEP.new(key)
 
     def encrypt_deposit_code(self, value):
         return True
@@ -59,8 +64,10 @@ class EncryptionUtils:
         return wallet_map
 
     def _get_bank_amount(self, record):
-        amount = rsa.decrypt(record, self.bank_public_key)
-        return amount
+        # amount = self.bank_public_key.decrypt(record)
+        amount = self.bank_rsa.decrypt(record)
+            # rsa.decrypt(record, self.bank_public_cipher)
+        return b64encode(amount)
 
     def _get_user_amount(self, record):
         amount = 0

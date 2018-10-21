@@ -24,7 +24,7 @@ def info():
               /wallet_sync POST code: <user provided encrypted sync code>"""
 
 
-@app.route('/set_bank_public_key')
+@app.route('/set_bank_public_key', methods=["POST"])
 def set_bank_pubic_key():
     data = request.data
     dataDict = json.loads(data)
@@ -33,7 +33,8 @@ def set_bank_pubic_key():
         encryption_utils.set_bank_public_key(key)
         return Response('Public Key Set', 200)
     except Exception as e:
-        print('failed to set key' + e)
+        print(e)
+        raise e
         return Response('Failed to set Public Key', 400)
 
 
@@ -51,7 +52,7 @@ def user_deposit():
         account_details.deposit(value)
         return Response('Balance:' + str(account_details.get_balance()), 200)
     except Exception as e:
-        print('Failed to deposit' + e)
+        print(e)
         return Response('Failed to deposit', 400)
 
 
@@ -65,7 +66,7 @@ def bank_deposit():
         account_details.deposit(value)
         return Response('Balance:' + str(account_details.get_balance()), 200)
     except Exception as e:
-        print('Failed to deposit' + e)
+        raise e
         return Response('Failed to deposit', 400)
 
 
@@ -79,7 +80,7 @@ def wallet_sync():
         account_details.wallet_sync(wid, counter)
         return Response('Updated wallet sync', 200)
     except Exception as e:
-        print('Failed to sync' + e)
+        print(e)
         return Response('Failed to sync', 400)
 
 

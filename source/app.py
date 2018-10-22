@@ -4,6 +4,7 @@ from source import encryption_utils
 from source.account_details import AccountDetails
 from flask import Response, request
 import json
+import base64
 
 app = Flask(__name__)
 
@@ -49,7 +50,7 @@ def user_deposit():
     code = dataDict["code"]
     print(code)
     try:
-        value = deposit_util.user_deposit('junk')
+        value = deposit_util.user_deposit(code)
         account_details.deposit(value)
         return Response('Balance:' + str(account_details.get_balance()), 200)
     except Exception as e:
@@ -65,8 +66,8 @@ def bank_deposit():
     print('Bank deposit code: ' + code)
     try:
         value = deposit_util.bank_deposit(code)
-        account_details.deposit(value)
-        return Response('Balance:' + str(account_details.get_balance()), 200)
+        # account_details.deposit(value)
+        # return Response('Balance:' + str(account_details.get_balance()), 200)
     except Exception as e:
         raise e
         return Response('Failed to deposit', 400)
@@ -98,8 +99,10 @@ def generate_deposit_code():
         # encryption_utils.increment_wallet_counter(WIDB)
         print('Code length : ' + str(code.__len__()))
         print('Encoded: ' + str(code))
-        print('Decoded: ' + str(encryption_utils.decrypt(bytes(code))))
-        return Response(str(code), 200)
+        # print('Decoded: ' + str(encryption_utils.decrypt(bytes(code))))
+        account_details.withdraw(float(amount))
+        json_code = base64.encodebytes(code) #json.JSONEncoder().encode(code)
+        return Response(json_code, 200)
     except Exception as e:
         raise e
         return Response('Failed to generate deposit code', 400)

@@ -53,7 +53,8 @@ class EncryptionUtils:
         byte_str += counter_bytes
 
         print('Byte string: ' + byte_str + ' length: ' + str(byte_str.__len__()))
-        return self.aes.encrypt(byte_str)
+        code = self.aes.encrypt(byte_str)
+        return code
 
     def pad_bytes(self, data):
         data = str(data)
@@ -66,12 +67,16 @@ class EncryptionUtils:
             return data
 
     def decrypt_user_deposit_code(self, encrypted_code):
+        temp = ''
+        #encrypted_bytes = bytearray.fromhex(encrypted_code)
         decrypted_code = self.decrypt(encrypted_code)
         amount = self._get_user_amount(decrypted_code)
-        wallet_ids = self._get_wallet_ids(decrypted_code)
-        return amount, wallet_ids
+        #wallet_ids = self._get_wallet_ids(decrypted_code)
+        #return amount, wallet_ids
+        return True
 
     def decrypt_bank_deposit_code(self, encrypted_code):
+
         amount = self._get_bank_amount(encrypted_code)
         return amount
 
@@ -102,10 +107,20 @@ class EncryptionUtils:
         return b64encode(amount)
 
     def _get_user_amount(self, record):
+        # convert to bytes
+        record = record.encode()
+        amount = record[14:15]
+
         amount = 0
         return amount
 
     def decrypt(self, code):
+        # TODO:: trim back to non-null length ... ?
+        print('Code length in decrypt: ' + str(code.__len__()))
+        code_arr = code.split('0x')
+        print('Arr length' + str(code_arr.__len__()))
+
+        code = b64decode(code)
         return self.aes.decrypt(code)
 
     def get_wallet_counter(self, wid):

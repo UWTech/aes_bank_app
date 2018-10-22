@@ -8,7 +8,7 @@ class Deposit:
         try:
             amount = self.encryption_utils.decrypt_user_deposit_code(deposit_code)
         except Exception as e:
-            print('Failed to deposit:' + e)
+            raise e
 
         return amount
 

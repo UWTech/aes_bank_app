@@ -21,7 +21,8 @@ def info():
               /set_bank_public_key POST public_key: <RSA public key>
               /user_deposit POST code: <user provided encrypted deposit code>
               /bank_deposit POST code: <bank provided RSA encrypted code>
-              /wallet_sync POST code: <user provided encrypted sync code>"""
+              /wallet_sync POST code: <user provided encrypted sync code>
+              /generate_deposit_code POST WIDA: <sender's 4 byte wallet ID>, WIDB: <receiver's 4 byte wallet ID>, amount: <amount to transfer 4 bytes>"""
 
 
 @app.route('/set_bank_public_key', methods=["POST"])
@@ -61,6 +62,7 @@ def bank_deposit():
     data = request.data
     dataDict = json.loads(data)
     code = dataDict["code"]
+    print('Bank deposit code: ' + code)
     try:
         value = deposit_util.bank_deposit(code)
         account_details.deposit(value)
@@ -83,6 +85,24 @@ def wallet_sync():
         print(e)
         return Response('Failed to sync', 400)
 
+@app.route('/generate_deposit_code', methods=['POST'])
+def generate_deposit_code():
+    data = request.data
+    dataDict = json.loads(data)
+    WIDA = dataDict["WIDA"]
+    WIDB = dataDict["WIDB"]
+    amount = dataDict["amount"]
+    try:
+        counter = 0 # encryption_utils.get_wallet_counter(WIDB) TODO:: get wallet counter
+        code = encryption_utils.encrypt_deposit_code(WIDA, WIDB, amount, counter)
+        # encryption_utils.increment_wallet_counter(WIDB)
+        print('Code length : ' + str(code.__len__()))
+        print('Encoded: ' + str(code))
+        print('Decoded: ' + str(encryption_utils.decrypt(bytes(code))))
+        return Response(str(code), 200)
+    except Exception as e:
+        raise e
+        return Response('Failed to generate deposit code', 400)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)

@@ -1,6 +1,7 @@
 import binascii
 import hashlib
 from base64 import b64decode, b64encode
+import Crypto
 from Crypto.Cipher import AES
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
@@ -18,6 +19,7 @@ class EncryptionUtils:
         self.bank_rsa = None
         self.account_details = account_details
         self.aes = AES.new(self.aes_key, AES.MODE_ECB)
+        self.wallet_counter_map = {}
 
     def set_bank_public_key(self, bank_pu):
         public_modulus = 'CF9E0B601B6BD9335619470D3C22EED15D73B7D6D3AEB725FF4E458ED13D20D48027F2300A4346427E8FBB30C6F6C9E7AAC7B88AB3D376CCF5AF05E0B188CFA1F361F8B5B78C4E9EFC95A667B0AD26D5593FCAF629BB098AAFC7DF6F523D51450C9B7BF1A62EE4D3466D4D69D6B6C5E8488A6BC2BC70B09ED96753BA248516B3'
@@ -30,10 +32,38 @@ class EncryptionUtils:
 
         key = RSA.construct((public_mod_int, exponent_int))
         self.bank_rsa = key
-        self.bank_public_key = PKCS1_OAEP.new(key)
+        self.bank_public_key = PKCS1_OAEP.new(key, hashAlgo=Crypto.Hash.SHA256)
 
-    def encrypt_deposit_code(self, value):
-        return True
+    def encrypt_deposit_code(self, WIDA, WIDB, amount, counter):
+        # bytes 1-4: Sender’s Wallet ID
+        # bytes 5-8: Receiver’s Wallet ID
+        # bytes 9-12: Amount
+        # bytes 13-16: Counter
+        byte_str = ''
+        wida_bytes = self.pad_bytes(WIDA)
+        byte_str += wida_bytes
+
+        widb_bytes = self.pad_bytes(WIDB)
+        byte_str += widb_bytes
+
+        amount_bytes = self.pad_bytes(amount)
+        byte_str += amount_bytes
+
+        counter_bytes = self.pad_bytes(counter)
+        byte_str += counter_bytes
+
+        print('Byte string: ' + byte_str + ' length: ' + str(byte_str.__len__()))
+        return self.aes.encrypt(byte_str)
+
+    def pad_bytes(self, data):
+        data = str(data)
+        if data.__len__() < 4:
+            print('byte arr before padding: ' + str(data) + ' length: ' + str(data.__len__()))
+            data = data.rjust(4, '\0')
+            print('byte arr after padding: ' + str(data) + ' length: ' + str(data.__len__()))
+            return data
+        else:
+            return data
 
     def decrypt_user_deposit_code(self, encrypted_code):
         decrypted_code = self.decrypt(encrypted_code)
@@ -65,8 +95,10 @@ class EncryptionUtils:
 
     def _get_bank_amount(self, record):
         # amount = self.bank_public_key.decrypt(record)
-        amount = self.bank_rsa.decrypt(record)
-            # rsa.decrypt(record, self.bank_public_cipher)
+
+        # record_bytes = bytearray.fromhex(record)
+        # amount = self.bank_rsa.decrypt(record_bytes)
+        amount = self.bank_public_key.decrypt(record)
         return b64encode(amount)
 
     def _get_user_amount(self, record):
@@ -74,4 +106,14 @@ class EncryptionUtils:
         return amount
 
     def decrypt(self, code):
-        return self.aes.AESCipher.decrypt(code)
+        return self.aes.decrypt(code)
+
+    def get_wallet_counter(self, wid):
+        # get wallet id if it exists, otherwise return 0
+        counter = self.wallet_counter_map[wid]
+        if counter is None:
+            self.wallet_counter_map[wid] = 0
+
+    def incerment_wallet_counter(self, wid):
+        counter = self.wallet_counter_map[wid]
+        self.wallet_counter_map[wid] = counter + 1

@@ -94,14 +94,13 @@ def generate_deposit_code():
     WIDB = dataDict["WIDB"]
     amount = dataDict["amount"]
     try:
-        counter = 0 # encryption_utils.get_wallet_counter(WIDB) TODO:: get wallet counter
+        counter = encryption_utils.get_wallet_counter(WIDB)
         code = encryption_utils.encrypt_deposit_code(WIDA, WIDB, amount, counter)
-        # encryption_utils.increment_wallet_counter(WIDB)
+        encryption_utils.increment_wallet_counter(WIDB)
         print('Code length : ' + str(code.__len__()))
         print('Encoded: ' + str(code))
-        # print('Decoded: ' + str(encryption_utils.decrypt(bytes(code))))
         account_details.withdraw(float(amount))
-        json_code = base64.encodebytes(code) #json.JSONEncoder().encode(code)
+        json_code = base64.encodebytes(code)
         return Response(json_code, 200)
     except Exception as e:
         raise e

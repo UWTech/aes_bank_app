@@ -1,4 +1,5 @@
 from flask import Flask
+from flask import jsonify
 from source.deposit import Deposit
 from source import encryption_utils
 from source.account_details import AccountDetails
@@ -23,7 +24,8 @@ def info():
               /user_deposit POST code: <user provided encrypted deposit code>
               /bank_deposit POST code: <bank provided RSA encrypted code>
               /wallet_sync POST code: <user provided encrypted sync code>
-              /generate_deposit_code POST WIDA: <sender's 4 byte wallet ID>, WIDB: <receiver's 4 byte wallet ID>, amount: <amount to transfer 4 bytes>"""
+              /generate_deposit_code POST WIDA: <sender's 4 byte wallet ID>, WIDB: <receiver's 4 byte wallet ID>, amount: <amount to transfer 4 bytes>
+              /generate_wallet_sync WIDA: <sender's 4 byte wallet ID>, WIDB: <receiver's 4 byte wallet ID>"""
 
 
 @app.route('/set_bank_public_key', methods=["POST"])
@@ -40,6 +42,7 @@ def set_bank_pubic_key():
         return Response('Failed to set Public Key', 400)
 
 
+#TODO:: convert to hex prior to deposit?
 @app.route('/user_deposit', methods=['POST'])
 def user_deposit():
     # decrypt code
@@ -79,13 +82,29 @@ def wallet_sync():
     dataDict = json.loads(data)
     code = dataDict["code"]
     try:
-        wid, counter = encryption_utils.decrypt_wallet_sync_code(code)
-        account_details.wallet_sync(wid, counter)
+        wid = encryption_utils.decrypt_wallet_sync_code(code)
+        account_details.wallet_sync(wid)
         return Response('Updated wallet sync', 200)
     except Exception as e:
         print(e)
         return Response('Failed to sync', 400)
 
+
+@app.route('/generate_wallet_sync', methods=['POST'])
+def generate_wallet_sync():
+    data = request.data
+    dataDict = json.loads(data)
+    WIDA = dataDict["WIDA"]
+    WIDB = dataDict["WIDB"]
+    try:
+        code = encryption_utils.encrypt_deposit_code(WIDA, WIDB, 0, 0)
+        return Response(base64.encodebytes(code), 200)
+    except Exception as e:
+        raise e
+        return Response('Failed to generate deposit code', 400)
+
+
+#TODO:: convert to hex
 @app.route('/generate_deposit_code', methods=['POST'])
 def generate_deposit_code():
     data = request.data

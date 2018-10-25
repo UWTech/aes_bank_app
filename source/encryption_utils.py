@@ -68,33 +68,28 @@ class EncryptionUtils:
             return data
 
     def decrypt_user_deposit_code(self, encrypted_code):
-        temp = ''
-        #encrypted_bytes = bytearray.fromhex(encrypted_code)
         decrypted_code = self.decrypt(encrypted_code)
         print('Byte sring in user deposit: ' + str(decrypted_code) + ' length: ' + str(encrypted_code.__len__()))
         amount = self._get_user_amount(decrypted_code)
-        #wallet_ids = self._get_wallet_ids(decrypted_code)
         #return amount, wallet_ids TODO:: increment user counter in table
         return amount
 
     def decrypt_bank_deposit_code(self, encrypted_code):
-
         amount = self._get_bank_amount(encrypted_code)
         return amount
 
-    def generate_wallet_sync_code(self, wallet_id):
-        return True
-
     def decrypt_wallet_sync_code(self, wallet_sync_code):
         # TODO:: decrypt and return WID and counter
-        WID = ''
-        counter = ''
-        return WID, counter
+        decrypted_code = self.decrypt(wallet_sync_code)
+        decoded_dict = self._get_wallet_ids(decrypted_code)
+        WID = decoded_dict['wallet_id_b'].decode('utf8')
+        return WID
 
-    def _get_wallet_ids(self, record):
+    def _get_wallet_ids(self, decrypted_code):
         # TODO:: get wallet ids from record
-        wallet_id_a = ''
-        wallet_id_b = ''
+        record = bytearray(decrypted_code)
+        wallet_id_a = record[0:4]
+        wallet_id_b = record[4:8]
         wallet_map = {}
         wallet_map['wallet_id_a'] = wallet_id_a
         wallet_map['wallet_id_b'] = wallet_id_b

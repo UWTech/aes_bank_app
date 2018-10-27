@@ -21,7 +21,7 @@ class AccountDetails:
         elif wallet_id in self.wallet_sync_table:
             self.wallet_sync_table[wallet_id] += 1
         else:
-            self.wallet_sync_table[wallet_id] = 1
+            self.wallet_sync_table[wallet_id] = 0
 
     def get_wallet_sync_counter(self, wallet_id):
         return self.wallet_sync_table[wallet_id]

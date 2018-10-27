@@ -42,7 +42,6 @@ def set_bank_pubic_key():
         return Response('Failed to set Public Key', 400)
 
 
-#TODO:: convert to hex prior to deposit?
 @app.route('/user_deposit', methods=['POST'])
 def user_deposit():
     # decrypt code
@@ -54,6 +53,14 @@ def user_deposit():
     print(code)
     try:
         value = deposit_util.user_deposit(code)
+        wallet_id = encryption_utils.decrypt_wallet_sync_code(code)
+        current_counter = account_details.get_wallet_sync_counter(wallet_id)
+        request_counter = encryption_utils.get_request_counter(code)
+
+        if current_counter != request_counter:
+            return Response('counters do not match', 400)
+
+        account_details.wallet_sync(wallet_id)
         account_details.deposit(value)
         return Response('Balance:' + str(account_details.get_balance()), 200)
     except Exception as e:
@@ -116,10 +123,9 @@ def generate_deposit_code():
         counter = encryption_utils.get_wallet_counter(WIDB)
         code = encryption_utils.encrypt_deposit_code(WIDA, WIDB, amount, counter)
         encryption_utils.increment_wallet_counter(WIDB)
-        print('Code length : ' + str(code.__len__()))
-        print('Encoded: ' + str(code))
         account_details.withdraw(float(amount))
         json_code = base64.encodebytes(code)
+        account_details.wallet_sync(WIDB)
         return Response(json_code, 200)
     except Exception as e:
         raise e

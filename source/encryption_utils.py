@@ -78,6 +78,20 @@ class EncryptionUtils:
         amount = self._get_bank_amount(encrypted_code)
         return amount
 
+    def get_request_counter(self, code):
+        decrypted_code = self.decrypt(code)
+        counter = self._get_counter(decrypted_code)
+        # convert bytes to string representation
+        amount_string = counter.decode()
+        regex_amount = re.sub('\x00', '', amount_string)
+        counter = int(regex_amount)
+        return counter
+
+    def _get_counter(self, decrypted_code):
+        record = bytearray(decrypted_code)
+        counter = record[12:16]
+        return counter
+
     def decrypt_wallet_sync_code(self, wallet_sync_code):
         # TODO:: decrypt and return WID and counter
         decrypted_code = self.decrypt(wallet_sync_code)
@@ -86,7 +100,6 @@ class EncryptionUtils:
         return WID
 
     def _get_wallet_ids(self, decrypted_code):
-        # TODO:: get wallet ids from record
         record = bytearray(decrypted_code)
         wallet_id_a = record[0:4]
         wallet_id_b = record[4:8]

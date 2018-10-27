@@ -6,6 +6,8 @@ import re
 from Crypto.Cipher import AES
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
+from Crypto.Signature import PKCS1_v1_5
+from Crypto.Hash import SHA
 
 class EncryptionUtils:
 
@@ -16,20 +18,21 @@ class EncryptionUtils:
         print('byte array: ' + str(key_bytes))
         print('length: ' + str(key_bytes.__len__()))
         self.aes_key = bytes(key_bytes)
-        self.bank_public_key = bank_public_key
+        self.bank_public_key = None
         self.bank_rsa = None
         self.account_details = account_details
         self.aes = AES.new(self.aes_key, AES.MODE_ECB)
         self.wallet_counter_map = {}
+        self.set_bank_public_key(None)
 
     def set_bank_public_key(self, bank_pu):
         public_modulus = 'CF9E0B601B6BD9335619470D3C22EED15D73B7D6D3AEB725FF4E458ED13D20D48027F2300A4346427E8FBB30C6F6C9E7AAC7B88AB3D376CCF5AF05E0B188CFA1F361F8B5B78C4E9EFC95A667B0AD26D5593FCAF629BB098AAFC7DF6F523D51450C9B7BF1A62EE4D3466D4D69D6B6C5E8488A6BC2BC70B09ED96753BA248516B3'
-        public_exponent = '0x10001'
+        public_exponent = '010001'
         # convert to byte array in preparation for conversion to hexadecimal
 
-        public_mod_int = int(public_modulus, 16)
+        public_mod_int = int(bytes(bytearray.fromhex(public_modulus)).hex(), 16)
 
-        exponent_int = int(public_exponent, 16)
+        exponent_int = int(bytes(bytearray.fromhex(public_exponent)).hex(), 16)
 
         key = RSA.construct((public_mod_int, exponent_int))
         self.bank_rsa = key
@@ -109,12 +112,22 @@ class EncryptionUtils:
         return wallet_map
 
     def _get_bank_amount(self, record):
-        # amount = self.bank_public_key.decrypt(record)
+        bytes_record = bytes(bytearray.fromhex(record))
+        emd_decrypted = self.aes.decrypt(bytes_record)
+        emd_hex = emd_decrypted.hex()
+        amount = int(emd_hex, 16)
+        return amount
 
-        # record_bytes = bytearray.fromhex(record)
-        # amount = self.bank_rsa.decrypt(record_bytes)
-        amount = self.bank_public_key.decrypt(record)
-        return b64encode(amount)
+    def verify_signature(self, signature, emd_token):
+        signer = PKCS1_v1_5.new(self.bank_rsa)
+        digest = SHA.new()
+        # Assumes the data is base64 encoded to begin with
+        emd_token_encoded = bytes(bytearray.fromhex(emd_token)).hex()
+        hex_encoded = emd_token_encoded.encode()
+        digest.update(emd_token_encoded.encode())
+        if signer.verify(digest, signature):
+            return True
+        return False
 
     def _get_user_amount(self, record):
         # convert to byte array for slicing

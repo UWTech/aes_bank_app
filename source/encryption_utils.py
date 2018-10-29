@@ -121,14 +121,17 @@ class EncryptionUtils:
     def verify_signature(self, signature, emd_token):
         signer = PKCS1_v1_5.new(self.bank_rsa)
         digest = SHA.new()
-        # Assumes the data is base64 encoded to begin with
-        emd_token_encoded = bytes(bytearray.fromhex(emd_token)).hex()
-        hex_encoded = emd_token_encoded.encode()
-        digest.update(emd_token_encoded.encode())
-        if signer.verify(digest, signature):
+        emd_token_hex_bin = binascii.unhexlify(emd_token)
+        signature_hex_bin = binascii.unhexlify(signature)
+        digest.update(emd_token_hex_bin)
+        if signer.verify(digest, signature_hex_bin):
+            print('Signature valid!')
             return True
+        print('signature not valid!')
         return False
-
+# byte as byte arr (nested) b'\x88b\xfe\x16\xd5o2U\x84\x10wIH~/x'
+# byte array from hext string bytearray(b'\x88b\xfe\x16\xd5o2U\x84\x10wIH~/x')
+# bytes from hex b'\x88b\xfe\x16\xd5o2U\x84\x10wIH~/x'
     def _get_user_amount(self, record):
         # convert to byte array for slicing
         record = bytearray(record)

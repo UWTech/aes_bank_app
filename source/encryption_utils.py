@@ -18,7 +18,6 @@ class EncryptionUtils:
         print('byte array: ' + str(key_bytes))
         print('length: ' + str(key_bytes.__len__()))
         self.aes_key = bytes(key_bytes)
-        self.bank_public_key = None
         self.bank_rsa = None
         self.account_details = account_details
         self.aes = AES.new(self.aes_key, AES.MODE_ECB)
@@ -28,15 +27,12 @@ class EncryptionUtils:
     def set_bank_public_key(self, bank_pu):
         public_modulus = 'CF9E0B601B6BD9335619470D3C22EED15D73B7D6D3AEB725FF4E458ED13D20D48027F2300A4346427E8FBB30C6F6C9E7AAC7B88AB3D376CCF5AF05E0B188CFA1F361F8B5B78C4E9EFC95A667B0AD26D5593FCAF629BB098AAFC7DF6F523D51450C9B7BF1A62EE4D3466D4D69D6B6C5E8488A6BC2BC70B09ED96753BA248516B3'
         public_exponent = '010001'
-        # convert to byte array in preparation for conversion to hexadecimal
-
-        public_mod_int = int(bytes(bytearray.fromhex(public_modulus)).hex(), 16)
-
-        exponent_int = int(bytes(bytearray.fromhex(public_exponent)).hex(), 16)
+        # convert hex to int
+        public_mod_int = int(public_modulus, 16)
+        exponent_int = int(public_exponent, 16)
 
         key = RSA.construct((public_mod_int, exponent_int))
         self.bank_rsa = key
-        self.bank_public_key = PKCS1_OAEP.new(key, hashAlgo=Crypto.Hash.SHA256)
 
     def encrypt_deposit_code(self, WIDA, WIDB, amount, counter):
         # bytes 1-4: Sender’s Wallet ID
@@ -74,7 +70,6 @@ class EncryptionUtils:
         decrypted_code = self.decrypt(encrypted_code)
         print('Byte sring in user deposit: ' + str(decrypted_code) + ' length: ' + str(encrypted_code.__len__()))
         amount = self._get_user_amount(decrypted_code)
-        #return amount, wallet_ids TODO:: increment user counter in table
         return amount
 
     def decrypt_bank_deposit_code(self, encrypted_code):

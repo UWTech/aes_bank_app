@@ -22,7 +22,7 @@ def info():
               Usage:
               /set_bank_public_key POST public_key: <RSA public key>
               /user_deposit POST code: <user provided encrypted deposit code>
-              /bank_deposit POST code: <bank provided RSA encrypted code>
+              /bank_deposit POST emd_code: <bank provided AES256 encrypted code value in hex>, signature: <PKCS1-RSA of SHA1 of the token in hex>
               /wallet_sync POST code: <user provided encrypted sync code>
               /generate_deposit_code POST WIDA: <sender's 4 byte wallet ID>, WIDB: <receiver's 4 byte wallet ID>, amount: <amount to transfer 4 bytes>
               /generate_wallet_sync WIDA: <sender's 4 byte wallet ID>, WIDB: <receiver's 4 byte wallet ID>"""
@@ -72,15 +72,23 @@ def user_deposit():
 def bank_deposit():
     data = request.data
     dataDict = json.loads(data)
-    code = dataDict["code"]
-    print('Bank deposit code: ' + code)
+    emd_token = dataDict["emd"]
+    signature = dataDict["signature"]
+    print('Bank deposit code: ' + emd_token)
     try:
-        value = deposit_util.bank_deposit(code)
-        # account_details.deposit(value)
-        # return Response('Balance:' + str(account_details.get_balance()), 200)
+        value = deposit_util.bank_deposit(emd_token)
+        verified = encryption_utils.verify_signature(signature, emd_token)
+        if not verified:
+            print('Value: ' + str(value))
+            return Response('Invalid Signature!', 400)
+        # else, valid, complete deposit
+        print('Value: ' + str(value))
+        account_details.deposit(value)
+        return Response('funds deposited', 200)
     except Exception as e:
         raise e
         return Response('Failed to deposit', 400)
+
 
 
 @app.route('/wallet_sync', methods=['POST'])

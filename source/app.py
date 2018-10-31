@@ -79,8 +79,10 @@ def bank_deposit():
         value = deposit_util.bank_deposit(emd_token)
         verified = encryption_utils.verify_signature(signature, emd_token)
         if not verified:
+            print('Value: ' + str(value))
             return Response('Invalid Signature!', 400)
         # else, valid, complete deposit
+        print('Value: ' + str(value))
         account_details.deposit(value)
         return Response('funds deposited', 200)
     except Exception as e:
